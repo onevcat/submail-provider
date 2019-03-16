@@ -20,10 +20,10 @@ public final class SubmailClient: Service {
             balance.adapt(in: self)
             try req.content.encode(balance)
         }
-        return request.flatMap { response in
+        return request.map { response in
             switch response.http.status {
             case .ok, .accepted:
-                return try response.content.decodeSubmail(Balance.self)
+                return try response.decodeSubmail(Balance.self)
             default:
                 throw SubmailError.invalidResponse(response)
             }

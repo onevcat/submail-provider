@@ -1,13 +1,20 @@
 
 import Vapor
 
-extension ContentContainer where M: Vapor.Response {
-    func decodeSubmail<D: Decodable>(_ type: D.Type) throws -> Future<D> {
+extension Response {
+    func decodeSubmail<D: Decodable>(_ type: D.Type) throws -> D {
+        let decoder = JSONDecoder()
+        let data = http.body.data ?? Data()
         do {
-            return try decode(type)
+            let result = try decoder.decode(type, from: data)
+            return result
         } catch {
-            let response = try decode(SubmailError.Response.self).wait()
-            throw SubmailError.errorResponse(response)
+            do {
+                let response = try decoder.decode(SubmailError.Response.self, from: data)
+                throw SubmailError.errorResponse(response)
+            } catch {
+                throw SubmailError.invalidResponse(self)
+            }
         }
     }
 }
