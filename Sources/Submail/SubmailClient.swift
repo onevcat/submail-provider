@@ -13,9 +13,13 @@ public final class SubmailClient: Service {
         self.config = config
     }
 
-    func mailBalance(on worker: Worker) -> Future<Balance> {
+    public func mailBalance(on worker: Worker) -> Future<Balance> {
 
-        let request = client.post(SubmailClient.apiBalanceMail)
+        let request = client.post(SubmailClient.apiBalanceMail) { req in
+            var balance = BalanceRequest()
+            balance.adapt(in: self)
+            try req.content.encode(balance)
+        }
         return request.flatMap { response in
             switch response.http.status {
             case .ok, .accepted:
@@ -24,6 +28,16 @@ public final class SubmailClient: Service {
                 throw SubmailError.invalidResponse(response)
             }
         }
+    }
+}
+
+public struct BalanceRequest: Content {
+    var appID: String = ""
+    var signature: String = ""
+
+    mutating func adapt(in client: SubmailClient) {
+        self.appID = client.config.appID
+        self.signature = client.config.appKey
     }
 }
 

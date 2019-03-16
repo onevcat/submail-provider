@@ -2,6 +2,8 @@ import Vapor
 
 public final class SubmailProvider: Provider {
 
+    public init() { }
+
     public func register(_ services: inout Services) throws {
         services.register { container -> SubmailClient in
             let httpClient = try container.make(Client.self)
