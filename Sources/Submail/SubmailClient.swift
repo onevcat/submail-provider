@@ -39,6 +39,10 @@ public struct BalanceRequest: Content {
         self.appID = client.config.appID
         self.signature = client.config.appKey
     }
+
+    enum CodingKeys: String, CodingKey {
+        case appID = "appid", signature
+    }
 }
 
 public struct Balance: Content {
