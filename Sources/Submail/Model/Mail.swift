@@ -16,7 +16,7 @@ public struct Mail: Encodable {
     public var html: String?
     public var vars: JSONString?
     public var links: JSONString?
-    public var attachments: [String]?
+    var attachments: [Data]?
     public var headers: JSONString?
     public var asynchronous: String?
     public var tag: String?
@@ -31,9 +31,33 @@ public struct Mail: Encodable {
         self.signature = config.appKey
     }
 
+    public mutating func addAttachment(at path: String) throws {
+        let url = URL(fileURLWithPath: path)
+        let data = try Data(contentsOf: url)
+        addAttachment(data)
+    }
+
+    public mutating func addAttachment(_ data: Data) {
+        if let attachments = attachments {
+            self.attachments = attachments + [data]
+        } else {
+            self.attachments = [data]
+        }
+    }
+
     enum CodingKeys: String, CodingKey {
         case  appID = "appid", signature, to, from, fromName = "from_name",
               reply, cc, bcc, subject, text, html, vars, links, attachments,
               headers, asynchronous
     }
+}
+
+public struct MailResponse: Content {
+
+    public struct Return: Content {
+        public let sendID: String
+        public let to: String
+    }
+
+    public let `return`: [Return]
 }
