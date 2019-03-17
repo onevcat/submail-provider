@@ -33,6 +33,8 @@ public final class SubmailClient: Service {
 
     public func send(mail: Mail, on workder: Worker) -> Future<MailResponse> {
         let request = client.post(SubmailClient.apiMailSend) { req in
+            var mail = mail
+            mail.adapt(in: config)
             try req.content.encode(mail, as: .formData)
         }
         return request.map { response in
