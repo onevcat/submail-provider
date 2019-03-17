@@ -26,9 +26,9 @@ public struct Mail: Encodable {
         self.subject = subject
     }
 
-    mutating func adapt(in client: SubmailClient) {
-        self.appID = client.config.appID
-        self.signature = client.config.appKey
+    mutating func adapt(in config: SubmailConfig) {
+        self.appID = config.appID
+        self.signature = config.appKey
     }
 
     enum CodingKeys: String, CodingKey {

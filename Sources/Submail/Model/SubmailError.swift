@@ -13,7 +13,7 @@ public enum SubmailError: Error {
 
     case invalidRequest(Data)
     case errorResponse(Response)
-    case invalidResponse(Vapor.Response)
+    case invalidResponse(HTTPResponse)
 }
 
 

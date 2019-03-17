@@ -17,39 +17,16 @@ public final class SubmailClient: Service {
 
         let request = client.post(SubmailClient.apiBalanceMail) { req in
             var balance = BalanceRequest()
-            balance.adapt(in: self)
+            balance.adapt(in: config)
             try req.content.encode(balance)
         }
         return request.map { response in
             switch response.http.status {
             case .ok, .accepted:
-                return try response.decodeSubmail(Balance.self)
+                return try response.http.decodeSubmail(Balance.self)
             default:
-                throw SubmailError.invalidResponse(response)
+                throw SubmailError.invalidResponse(response.http)
             }
         }
-    }
-}
-
-public struct BalanceRequest: Content {
-    var appID: String = ""
-    var signature: String = ""
-
-    mutating func adapt(in client: SubmailClient) {
-        self.appID = client.config.appID
-        self.signature = client.config.appKey
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case appID = "appid", signature
-    }
-}
-
-public struct Balance: Content {
-    public let balance: Int
-    public let freeBalance: Int
-
-    enum CodingKeys: String, CodingKey {
-        case balance, freeBalance = "free_balance"
     }
 }

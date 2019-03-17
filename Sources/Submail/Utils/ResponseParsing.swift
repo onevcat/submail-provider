@@ -1,10 +1,10 @@
 
 import Vapor
 
-extension Response {
+extension HTTPResponse {
     func decodeSubmail<D: Decodable>(_ type: D.Type) throws -> D {
         let decoder = JSONDecoder()
-        let data = http.body.data ?? Data()
+        let data = body.data ?? Data()
         do {
             let result = try decoder.decode(type, from: data)
             return result
