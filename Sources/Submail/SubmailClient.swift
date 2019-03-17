@@ -35,7 +35,13 @@ public final class SubmailClient: Service {
         let request = client.post(SubmailClient.apiMailSend) { req in
             var mail = mail
             mail.adapt(in: config)
-            try req.content.encode(mail, as: .formData)
+
+
+            if let _ = mail.attachments {
+                req.http.body = HTTPBody(data: try mail.multipartData())
+            } else {
+                try req.content.encode(mail, as: .formData)
+            }
         }
         return request.map { response in
             let httpResponse = response.http
