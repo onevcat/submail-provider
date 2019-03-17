@@ -36,9 +36,11 @@ public final class SubmailClient: Service {
             var mail = mail
             mail.adapt(in: config)
 
-
             if let _ = mail.attachments {
-                req.http.body = HTTPBody(data: try mail.multipartData())
+                let (boundary, data) = try mail.multipartData()
+                req.http.body = HTTPBody(data: data)
+                let contentType = MediaType(type: "multipart", subType: "form-data", parameters: ["boundary": boundary])
+                req.http.contentType = contentType
             } else {
                 try req.content.encode(mail, as: .formData)
             }

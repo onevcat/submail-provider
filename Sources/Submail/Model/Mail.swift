@@ -91,7 +91,7 @@ public struct Mail: Encodable {
         }
     }
 
-    func multipartData() throws -> Data {
+    func multipartData() throws -> (String, Data) {
         let fieldParts = [
             try appID.convertToMultipartPart(name: .appID),
             try signature.convertToMultipartPart(name: .signature),
@@ -120,7 +120,7 @@ public struct Mail: Encodable {
         let random = OSRandom().generateData(count: 16)
         let boundary: String = "---submailBoundary\(random.hexEncodedString())"
 
-        return try MultipartSerializer().serialize(parts: allParts, boundary: boundary)
+        return (boundary, try MultipartSerializer().serialize(parts: allParts, boundary: boundary))
     }
 
     enum CodingKeys: String, CodingKey {
