@@ -9,12 +9,14 @@ extension HTTPResponse {
             let result = try decoder.decode(type, from: data)
             return result
         } catch {
+            let finalError: SubmailError
             do {
                 let response = try decoder.decode(SubmailError.Response.self, from: data)
-                throw SubmailError.errorResponse(response)
+                finalError = SubmailError.errorResponse(response)
             } catch {
-                throw SubmailError.invalidResponse(self)
+                finalError = SubmailError.invalidResponse(self)
             }
+            throw finalError
         }
     }
 }

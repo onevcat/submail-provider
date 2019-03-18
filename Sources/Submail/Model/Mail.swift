@@ -1,7 +1,7 @@
 import Vapor
 import Random
 
-public struct Attachment: Encodable {
+public struct Attachment: Encodable, Equatable {
     public let data: Data
     public let fileName: String?
     public let mediaType: MediaType
@@ -64,31 +64,34 @@ public struct Mail: Encodable {
         self.signature = config.appKey
     }
 
-    public mutating func addAttachment(
+    public func addingAttachment(
+        on request: Request,
         at path: String,
         fileName: String? = nil,
-        mediaType: MediaType? = nil) throws
+        mediaType: MediaType? = nil) throws -> Future<Mail>
     {
-        let url = URL(fileURLWithPath: path)
-        let data = try Data(contentsOf: url)
-
-        let fileName = fileName ?? url.lastPathComponent
-        let mediaType = mediaType ?? MediaType.fileExtension(url.pathExtension)
-
-        addAttachment(data, fileName: fileName, mediaType: mediaType)
-    }
-
-    public mutating func addAttachment(_ data: Data, fileName: String?, mediaType: MediaType?) {
-        let attachment = Attachment(data: data, fileName: fileName, mediaType: mediaType ?? .binary)
-        addAttachment(attachment)
-    }
-
-    public mutating func addAttachment(_ attachment: Attachment) {
-        if let attachments = attachments {
-            self.attachments = attachments + [attachment]
-        } else {
-            self.attachments = [attachment]
+        let fileIO = try request.fileio()
+        return fileIO.read(file: path).map { data in
+            let url = URL(fileURLWithPath: path)
+            let fileName = fileName ?? url.lastPathComponent
+            let mediaType = mediaType ?? MediaType.fileExtension(url.pathExtension)
+            return self.addingAttachment(data, fileName: fileName, mediaType: mediaType)
         }
+    }
+
+    public func addingAttachment(_ data: Data, fileName: String?, mediaType: MediaType?) -> Mail {
+        let attachment = Attachment(data: data, fileName: fileName, mediaType: mediaType ?? .binary)
+        return addingAttachment(attachment)
+    }
+
+    public func addingAttachment(_ attachment: Attachment) -> Mail {
+        var mail = self
+        if let attachments = attachments {
+            mail.attachments = attachments + [attachment]
+        } else {
+            mail.attachments = [attachment]
+        }
+        return mail
     }
 
     func multipartData() throws -> (String, Data) {
@@ -127,54 +130,5 @@ public struct Mail: Encodable {
         case  appID = "appid", signature, to, from, fromName = "from_name",
               reply, cc, bcc, subject, text, html, vars, links, attachments = "attachments[]",
               headers, asynchronous, tag
-    }
-}
-
-public struct MailResponse: Content {
-
-    public struct Return: Content {
-        public let sendID: String
-        public let to: String
-
-        enum CodingKeys: String, CodingKey {
-            case sendID = "send_id", to
-        }
-    }
-
-    public let `return`: [Return]
-}
-
-extension MultipartPartConvertible {
-    func convertToMultipartPart(
-        name: Mail.CodingKeys,
-        mediaType: MediaType? = nil,
-        fileName: String? = nil)
-    throws -> MultipartPart
-    {
-        return try convertToMultipartPart(name: name.rawValue, mediaType: mediaType, fileName: fileName)
-    }
-}
-
-extension JSONString: MultipartPartConvertible {
-    public func convertToMultipartPart() throws -> MultipartPart {
-        let data = try JSONSerialization.data(withJSONObject: dictionary)
-        return MultipartPart(data: data)
-    }
-
-    public static func convertFromMultipartPart(_ part: MultipartPart) throws -> JSONString {
-        guard let obj = try JSONSerialization.jsonObject(with: part.data, options: []) as? [String: Any] else {
-            throw MultipartError(identifier: "JSONString", reason: "Could not convert `Data` to `\(JSONString.self)`.")
-        }
-        return JSONString(obj)
-    }
-}
-
-extension MultipartPartConvertible {
-    func convertToMultipartPart(name: String, mediaType: MediaType? = nil, fileName: String? = nil) throws -> MultipartPart {
-        var part = try convertToMultipartPart()
-        part.name = name
-        part.contentType = mediaType
-        part.filename = fileName
-        return part
     }
 }

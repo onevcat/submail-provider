@@ -5,6 +5,7 @@ public final class SubmailClient: Service {
     static let base = "https://api.mysubmail.com"
     static let apiBalanceMail = base + "/balance/mail"
     static let apiMailSend = base + "/mail/send"
+    static let apiMailXsend = base + "/mail/xsend"
 
     let client: Client
     let config: SubmailConfig
@@ -31,7 +32,7 @@ public final class SubmailClient: Service {
         }
     }
 
-    public func send(mail: Mail, on workder: Worker) -> Future<MailResponse> {
+    public func send(mail: Mail, on worker: Worker) -> Future<SendMailResponse> {
         let request = client.post(SubmailClient.apiMailSend) { req in
             var mail = mail
             mail.adapt(in: config)
@@ -49,7 +50,24 @@ public final class SubmailClient: Service {
             let httpResponse = response.http
             switch httpResponse.status {
             case .ok, .accepted:
-                return try httpResponse.decodeSubmail(MailResponse.self)
+                return try httpResponse.decodeSubmail(SendMailResponse.self)
+            default:
+                throw SubmailError.invalidResponse(httpResponse)
+            }
+        }
+    }
+
+    public func xSend(mail: XMail, on worker: Worker) -> Future<SendMailResponse> {
+        let request = client.post(SubmailClient.apiMailXsend) { req in
+            var mail = mail
+            mail.adapt(in: config)
+            try req.content.encode(mail, as: .formData)
+        }
+        return request.map { response in
+            let httpResponse = response.http
+            switch httpResponse.status {
+            case .ok, .accepted:
+                return try httpResponse.decodeSubmail(SendMailResponse.self)
             default:
                 throw SubmailError.invalidResponse(httpResponse)
             }

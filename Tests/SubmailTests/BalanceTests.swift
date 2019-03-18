@@ -1,7 +1,6 @@
-
 import XCTest
-@testable import Submail
 import Vapor
+@testable import Submail
 
 class BalanceTests: XCTestCase {
     let balanceResponse = """
@@ -13,7 +12,6 @@ class BalanceTests: XCTestCase {
     """
 
     func testBalanceResponseParsing() throws {
-
         let body = HTTPBody(string: balanceResponse)
         var headers: HTTPHeaders = [:]
         headers.add(name: .contentType, value: MediaType.json.description)
@@ -24,12 +22,6 @@ class BalanceTests: XCTestCase {
         XCTAssertEqual(balance.freeBalance, 150)
     }
 
-    let errorResponse = """
-    {
-        
-    }
-    """
-
     func testBalanceRequestParsing() throws {
         let config = SubmailConfig(appID: "123", appKey: "abc")
         var balance = BalanceRequest()
@@ -38,5 +30,32 @@ class BalanceTests: XCTestCase {
         let json = try JSONSerialization.jsonObject(with: data, options: []) as! [String: Any]
         XCTAssertEqual(json["appid"] as? String, "123")
         XCTAssertEqual(json["signature"] as? String, "abc")
+    }
+
+    let errorResponse = """
+    {
+      "status": "error",
+      "code": 123,
+      "msg": "error reason"
+    }
+    """
+    func testBalanceErrorParsing() throws {
+        let body = HTTPBody(string: errorResponse)
+        var headers: HTTPHeaders = [:]
+        headers.add(name: .contentType, value: MediaType.json.description)
+        let response = HTTPResponse(headers: headers, body: body)
+
+        XCTAssertThrowsError(try response.decodeSubmail(Balance.self), "Should throw error") { error in
+            guard let error = error as? SubmailError else {
+                XCTFail("Should catch SubmailError.")
+                return
+            }
+            guard case .errorResponse(let res) = error else {
+                XCTFail("Should catch SubmailError.errorResponse.")
+                return
+            }
+            XCTAssertEqual(res.code, 123)
+            XCTAssertEqual(res.message, "error reason")
+        }
     }
 }
